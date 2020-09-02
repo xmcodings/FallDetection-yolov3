@@ -6,48 +6,56 @@ import falldetection
 import cv2
 import numpy as np
 
-def start_detection():
-    CONFIDENCE = 0.1
-    SCORE_THRESHOLD = 0.5
-    IOU_THRESHOLD = 0.5
-    config_path = "cfg/yolov3.cfg"
-    weights_path = "weights/yolov3.weights"
-    font_scale = 1
-    thickness = 1
-    labels = open("data/coco.names").read().strip().split("\n")
-    colors = np.random.randint(0, 255, size=(len(labels), 3), dtype="uint8")
-    detect_keywords = ["person", "sports ball", "bottle", "pottedplant"]
-    ignore_keywords = ["bird"]
+class YoloDetection:
 
-    net = cv2.dnn.readNetFromDarknet(config_path, weights_path)
+    def __init__(self):
+        self.config_path = "cfg/yolov3.cfg"
+        self.weights_path = "weights/yolov3.weights"
+        self.font_scale = 1
+        self.thickness = 1
+        self.labels = open("data/coco.names").read().strip().split("\n")
+        self.colors = np.random.randint(0, 255, size=(len(self.labels), 3), dtype="uint8")
+        self.detect_keywords = ["person", "sports ball", "bottle", "pottedplant"]
+        self.ignore_keywords = ["bird"]
+        self.toggle_camera = False
+        self.net = cv2.dnn.readNetFromDarknet(self.config_path, self.weights_path)
 
-    ln = net.getLayerNames()
-    ln = [ln[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+        self.ln = self.net.getLayerNames()
+        self.ln = [self.ln[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
 
-    cap = cv2.VideoCapture(0)
+    def monitor_camera(self):
+        self.toggle_camera = True
 
-    # variables
-    q = deque()
-    center_coord_q = deque()
-    class_id_q = deque()
+    def start_detection(self):
+        self.CONFIDENCE = 0.1
+        self.SCORE_THRESHOLD = 0.5
+        self.IOU_THRESHOLD = 0.5
 
-    center_coord = []
-    capture_queue = []
 
-    while True:
-        _, image = cap.read()
+        self.cap = cv2.VideoCapture(0)
 
-        h, w = image.shape[:2]
-        blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (256, 256), swapRB=True, crop=False)
-        net.setInput(blob)
+        # variables
+        self.q = deque()
+        self.center_coord_q = deque()
+        self.class_id_q = deque()
+
+        self.center_coord = []
+        self.capture_queue = []
+
+
+        self._, self.image = self.cap.read()
+
+        h, w = self.image.shape[:2]
+        self.blob = cv2.dnn.blobFromImage(self.image, 1 / 255.0, (256, 256), swapRB=True, crop=False)
+        self.net.setInput(self.blob)
         start = time.perf_counter()
-        layer_outputs = net.forward(ln)
+        self.layer_outputs = self.net.forward(self.ln)
         time_took = time.perf_counter() - start
         print("Time took:", time_took)
         boxes, confidences, class_ids = [], [], []
 
         # 모델 OUTPUT의 모든 class 를 확인
-        for output in layer_outputs:
+        for output in self.layer_outputs:
 
             # Output에서 나온 object를 확인
             for detection in output:
@@ -59,7 +67,7 @@ def start_detection():
 
                 # Confidence 이용해 확률 적은 물체 버림
 
-                if confidence > CONFIDENCE:
+                if confidence > self.CONFIDENCE:
                     # 바운딩 박스 좌표계
 
                     box = detection[:4] * np.array([w, h, w, h])
@@ -78,30 +86,30 @@ def start_detection():
                     boxes.append([x, y, int(width), int(height)])
                     confidences.append(float(confidence))
                     class_ids.append(class_id)
-                    center_coord.append({"X": centerX, "Y": centerY})
+                    self.center_coord.append({"X": centerX, "Y": centerY})
 
         # perform the non maximum suppression given the scores defined before
-        idxs = cv2.dnn.NMSBoxes(boxes, confidences, SCORE_THRESHOLD, IOU_THRESHOLD)
+        idxs = cv2.dnn.NMSBoxes(boxes, confidences, self.SCORE_THRESHOLD, self.IOU_THRESHOLD)
 
-        center_coord_q.append(center_coord)  # 전 4 frame으로부터 받은 object 정보
-        class_id_q.append(class_ids)  # 전 4 frame으로부터 받은 물체 id
+        self.center_coord_q.append(self.center_coord)  # 전 4 frame으로부터 받은 object 정보
+        self.class_id_q.append(class_ids)  # 전 4 frame으로부터 받은 물체 id
         font_scale = 1
         thickness = 1
         # print("nms indexs: ", idxs)
         print("detected class ids: ", class_ids)  # 한 frame 에서 검출된 물체 id
-        print("center coordinates: ", center_coord)  # 물체 center
+        print("center coordinates: ", self.center_coord)  # 물체 center
 
-        if len(center_coord_q) > 4:
-            center_coord_q.popleft()
-        if len(class_id_q) > 4:
-            class_id_q.popleft()
+        if len(self.center_coord_q) > 4:
+            self.center_coord_q.popleft()
 
-        if (len(class_id_q) > 3):
+        if len(self.class_id_q) > 4:
+            self.class_id_q.popleft()
+
+        if (len(self.class_id_q) > 3):
             print("----")
-            print(falldetection.detectFall(class_id_q, center_coord_q))
+            print(falldetection.detectFall(self.class_id_q, self.center_coord_q))
+            return falldetection.detectFall(self.class_id_q, self.center_coord_q)
 
-        if ord("q") == cv2.waitKey(1):
-            break
 
 
 
@@ -233,7 +241,7 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
-
+'''
 
 def detectFall(classids, centercoords):
     # takes classids, centers, and calculates detection
@@ -258,3 +266,4 @@ def detectFall(classids, centercoords):
 def warnUser():
 
     return 1
+'''
