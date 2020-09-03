@@ -19,6 +19,13 @@ class YoloDetection:
         self.ignore_keywords = ["bird"]
         self.toggle_camera = False
         self.net = cv2.dnn.readNetFromDarknet(self.config_path, self.weights_path)
+        # variables
+        self.q = deque()
+        self.center_coord_q = deque()
+        self.class_id_q = deque()
+
+        self.center_coord = []
+        self.capture_queue = []
 
         self.ln = self.net.getLayerNames()
         self.ln = [self.ln[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
@@ -33,16 +40,6 @@ class YoloDetection:
 
 
         self.cap = cv2.VideoCapture(0)
-
-        # variables
-        self.q = deque()
-        self.center_coord_q = deque()
-        self.class_id_q = deque()
-
-        self.center_coord = []
-        self.capture_queue = []
-
-
         self._, self.image = self.cap.read()
 
         h, w = self.image.shape[:2]
@@ -52,7 +49,7 @@ class YoloDetection:
         self.layer_outputs = self.net.forward(self.ln)
         time_took = time.perf_counter() - start
         print("Time took:", time_took)
-        boxes, confidences, class_ids = [], [], []
+        self.boxes, self.confidences, self.class_ids = [], [], []
 
         # 모델 OUTPUT의 모든 class 를 확인
         for output in self.layer_outputs:
@@ -83,36 +80,72 @@ class YoloDetection:
 
                     # 바운딩 박스, 좌표 업데이트
                     # 클래스 ID 업데이트
-                    boxes.append([x, y, int(width), int(height)])
-                    confidences.append(float(confidence))
-                    class_ids.append(class_id)
+                    self.boxes.append([x, y, int(width), int(height)])
+                    self.confidences.append(float(confidence))
+                    self.class_ids.append(class_id)
                     self.center_coord.append({"X": centerX, "Y": centerY})
 
         # perform the non maximum suppression given the scores defined before
-        idxs = cv2.dnn.NMSBoxes(boxes, confidences, self.SCORE_THRESHOLD, self.IOU_THRESHOLD)
+        self.idxs = cv2.dnn.NMSBoxes(self.boxes, self.confidences, self.SCORE_THRESHOLD, self.IOU_THRESHOLD)
 
         self.center_coord_q.append(self.center_coord)  # 전 4 frame으로부터 받은 object 정보
-        self.class_id_q.append(class_ids)  # 전 4 frame으로부터 받은 물체 id
+        self.class_id_q.append(self.class_ids)  # 전 4 frame으로부터 받은 물체 id
         font_scale = 1
         thickness = 1
         # print("nms indexs: ", idxs)
-        print("detected class ids: ", class_ids)  # 한 frame 에서 검출된 물체 id
+        print("detected class ids: ", self.class_ids)  # 한 frame 에서 검출된 물체 id
         print("center coordinates: ", self.center_coord)  # 물체 center
 
         if len(self.center_coord_q) > 4:
             self.center_coord_q.popleft()
+            print("center coord pop left")
 
         if len(self.class_id_q) > 4:
             self.class_id_q.popleft()
+            print("center coord pop left")
 
         if (len(self.class_id_q) > 3):
             print("----")
             print(falldetection.detectFall(self.class_id_q, self.center_coord_q))
             return falldetection.detectFall(self.class_id_q, self.center_coord_q)
 
+        if self.toggle_camera:
+            self.draw_box()
+
+        return 0,0,0
+
+    def draw_box(self):
+
+        if len(self.idxs) > 0:
+            # loop over the indexes we are keeping
+            for i in self.idxs.flatten():
+                # extract the bounding box coordinates
+                x, y = self.boxes[i][0], self.boxes[i][1]
+                w, h = self.boxes[i][2], self.boxes[i][3]
+
+                # 박스 작성
+                color = [int(c) for c in self.colors[self.class_ids[i]]]
+                cv2.rectangle(self.image, (x, y), (x + w, y + h), color=color, thickness=self.thickness)
+                text = f"{self.labels[self.class_ids[i]]}: {self.confidences[i]:.2f}"
+                # calculate text width & height to draw the transparent boxes as background of the text
+                (text_width, text_height) = \
+                cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, fontScale=self.font_scale, thickness=self.thickness)[0]
+                text_offset_x = x
+                text_offset_y = y - 5
+                box_coords = (
+                (text_offset_x, text_offset_y), (text_offset_x + text_width + 2, text_offset_y - text_height))
+                overlay = self.image.copy()
+                cv2.rectangle(overlay, box_coords[0], box_coords[1], color=color, thickness=cv2.FILLED)
+                # add opacity (transparency to the box)
+                self.image = cv2.addWeighted(overlay, 0.6, self.image, 0.4, 0)
+                # now put the text (label: confidence %)
+                cv2.putText(self.image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
+                            fontScale=self.font_scale, color=(0, 0, 0), thickness=self.thickness)
+
+        cv2.imshow("image", self.image)
 
 
-
+'''
 CONFIDENCE = 0.1
 SCORE_THRESHOLD = 0.5
 IOU_THRESHOLD = 0.5
@@ -241,6 +274,8 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
+'''
+
 '''
 
 def detectFall(classids, centercoords):
