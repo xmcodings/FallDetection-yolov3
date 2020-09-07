@@ -11,11 +11,11 @@ def detectFall(classids, centercoords):
     object_diff = []
     ob_length = len(recent)
     count = 0
-    for detect in classids:
-        if ob_length != len(detect):
+    for detects in classids:
+        if ob_length != len(detects):
              count = count + 1
     if count > threshold:
-        if detect in detect_keywords:
+        if detects in detect_keywords:
             object_diff = right_before - recent
             detect = True
         else:
