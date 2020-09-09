@@ -230,14 +230,14 @@ class YoloDetection:
 
         if len(self.center_coord_q) > 4:
             self.center_coord_q.popleft()
-            print("center coord pop left")
+            #print("center coord pop left")
 
         if len(self.class_id_q) > 4:
             self.class_id_q.popleft()
-            print("classid pop left")
+            #print("classid pop left")
 
-        print(self.class_id_q)
-        print(self.center_coord_q)
+        #print(self.class_id_q)
+        #print(self.center_coord_q)
 
         if len(self.class_id_q) > 3: # 3번째 frame 이상부터
             #print("----")

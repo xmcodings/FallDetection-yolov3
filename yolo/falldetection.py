@@ -11,6 +11,7 @@ def detectFall(classids, centercoords):
     object_diff = []
     ob_length = len(recent)
     count = 0
+    '''
     for detects in classids:
         if ob_length != len(detects):
              count = count + 1
@@ -20,10 +21,16 @@ def detectFall(classids, centercoords):
             detect = True
         else:
             detect = False
-
+    '''
     # calculate what object is detected
+    ret_coords = []
+    for idx, objects in enumerate(recent):
+        if objects in detect_keywords:
+            detect = True
+            object_diff.append(objects)
+            ret_coords.append(centercoords[QUEUESIZE-1][idx])
 
-    return detect, object_diff, centercoords[QUEUESIZE-1]
+    return detect, object_diff, ret_coords
 
 
 

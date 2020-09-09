@@ -4,11 +4,12 @@ import serial
 
 
 
-class Controller:
+class OldController:
 
     def __init__(self):
         self.yolodetect = yolocv.YoloDetection()
         self.toggle_monitor = True
+        #self.s = serial.Serial(port='/dev/tty.usbserial-1420', baudrate=9600, timeout=0)
 
     def monitor_on(self):
         self.toggle_monitor = True
@@ -28,9 +29,8 @@ class Controller:
             #print("center coords : ", center_coordinates)
 
             if detect:
-                s.write(b'1')
-            else:
-                s.write(b'0')
+                #self.s.write(b'text')
+                print("detected!")
 
             #ardu = s.readline()
             #print(ardu)
@@ -44,10 +44,5 @@ class Controller:
         cap.release()
         cv2.destroyAllWindows()
 
-
-if __name__ == "__main__":
-    s = serial.Serial(port='/dev/tty.usbserial-1420', baudrate=9600, timeout=0)
-    cont = Controller()
-    cont.start_monitor()
 
 
