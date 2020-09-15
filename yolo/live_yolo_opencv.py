@@ -139,7 +139,7 @@ class YoloDetection:
 
     def start_detection(self, image):
         self.CONFIDENCE = 0.1
-        self.SCORE_THRESHOLD = 0.5
+        self.SCORE_THRESHOLD = 0.2
         self.IOU_THRESHOLD = 0.5
 
         #self.cap = cv2.VideoCapture(0)
@@ -194,9 +194,17 @@ class YoloDetection:
 
         # perform the non maximum suppression given the scores defined before
         self.idxs = cv2.dnn.NMSBoxes(boxes, confidences, self.SCORE_THRESHOLD, self.IOU_THRESHOLD)
+        #print(self.idxs)
+        #print(self.idxs.flatten())
+        thresh_obj = []
+        if len(self.idxs) > 0:
+            for i in self.idxs.flatten():
+                thresh_obj.append(class_ids[i])
+        #print(class_ids)
+        #print(thresh_obj)
 
         self.center_coord_q.append(center_coord)  # 전 4 frame으로부터 받은 object 정보 queue
-        self.class_id_q.append(class_ids)  # 전 4 frame으로부터 받은 물체 id queue
+        self.class_id_q.append(thresh_obj)  # 전 4 frame으로부터 받은 물체 id queue
 
         # image manipulation
         if len(self.idxs) > 0:
@@ -244,9 +252,14 @@ class YoloDetection:
             #print(falldetection.detectFall(self.class_id_q, self.center_coord_q))
             detect, object_diff, center_coordinates = falldetection.detectFall(self.class_id_q, self.center_coord_q)
 
-            return detect, object_diff, center_coordinates, image
+            ret_string = ""
+            for obs in object_diff:
+                ret_string += self.labels[obs] + " "
 
-        return False,0,0,0
+            print(ret_string)
+            return detect, ret_string, center_coordinates, image
+
+        return 0,0,0,0
 
 
 
