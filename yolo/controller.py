@@ -4,7 +4,9 @@ import tkinter as tk
 import threading
 from PIL import Image, ImageTk
 import imutils
-
+import socketServer
+import numpy as np
+import traceback
 
 import sys
 
@@ -15,7 +17,7 @@ import serial
 
 class Controller:
 
-    def __init__(self, vs, serial):
+    def __init__(self, vs, serial, socket):
         self.yolodetect = yolocv.YoloDetection()
         self.toggle_monitor = False
         self.stopEvent = None
@@ -25,8 +27,9 @@ class Controller:
         self.panel = None
         self.cap = vs
         self.labels = open("data/coco.names").read().strip().split("\n")
+        self.socket_server = socket
 
-        #self.s = serial
+        self.s = serial
         self.btn_start = tk.Button(self.window, text="monitor!", command=self.monitor_toggle)
         self.lbl_status = tk.Label(master=self.window, text="Status : ")
         self.lbl_status_bar = tk.Label(master=self.window, text=" good ", background="green")
@@ -77,14 +80,14 @@ class Controller:
         #print("center coords : ", center_coordinates)
 
         if detect == 2:
-            #self.s.write(b'1')
+            self.s.write(b'1')
             print("detect human")
             self.lbl_status_bar["text"] = "bad"
             self.lbl_status_bar.configure(background="red")
             self.lbl_detected_objs["text"] = "detected : " + object_diff
-
         elif detect == 1:
             print("detect object")
+            self.s.write(b'2')
             self.lbl_status_bar["text"] = "warning"
             self.lbl_status_bar.configure(background="orange")
             self.lbl_detected_objs["text"] = "detected : " + object_diff
@@ -93,10 +96,23 @@ class Controller:
             self.lbl_status_bar["text"] = "good"
             self.lbl_status_bar.configure(background="green")
             self.lbl_detected_objs["text"] = "detected : nothing"
+            self.s.write(b'0')
 
-            #self.s.write(b'0')
-        #ardu = s.readline()
-        #print(ardu)
+        ardu = self.s.readline()
+        ardu_decode = ardu.decode("utf-8")
+        ardu_decode1 = ardu.decode()
+
+        print(ardu)
+        ardu_decode = ardu_decode.replace("\r","")
+        ardu_decode = ardu_decode.replace("\n","")
+        ardu_decode1 = ardu_decode1.replace("\r", "")
+        ardu_decode1 = ardu_decode1.replace("\n", "")
+
+        if ardu_decode =="101":
+            # 센서가 작동해서 에어벡 터짐
+            print("send to client!!")
+            socket.send_to_client(101)
+
         #print(self.toggle_monitor)
         if self.panel is None:
             self.panel = tk.Label()
@@ -126,10 +142,15 @@ class Controller:
 
 
 if __name__ == "__main__":
-    #s = serial.Serial(port='/dev/tty.usbserial-1420', baudrate=9600, timeout=0)
+    s = serial.Serial(port='/dev/tty.usbserial-1420', baudrate=9600, timeout=0)
+    ip = "192.168.0.4"
+    port = 9999
+    socket = socketServer.SocketServer(ip=ip, port=port)
+    socket.host_socket()
+    a = s.readline()
     #cont = Controller(s)
     cap = cv2.VideoCapture(0)
-    cont = Controller(vs=cap, serial=0)
+    cont = Controller(vs=cap, serial=s, socket=socket)
     #cont.start_monitor()
     cont.window.mainloop()
 
