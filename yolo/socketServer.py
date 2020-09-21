@@ -1,6 +1,12 @@
 import socket
 import struct
 import time
+import imutils
+import numpy as np
+from PIL import Image
+
+
+import cv2
 
 class SocketServer:
 
@@ -33,7 +39,7 @@ class SocketServer:
         self.client_sock.send(encode_byte_data)
 
     def send_image(self, image_encoded):
-        self.client_sock.send(image_encoded)
+        self.client_sock.sendall(image_encoded)
 
 
     def get_from_client(self):
@@ -46,8 +52,31 @@ class SocketServer:
 
 
 if __name__ == "__main__":
-    ip = "192.168.0.4"
+    ip = "10.210.60.100"
     port = 9999
-    socket = SocketServer(ip=ip, port=port)
-    socket.host_socket()
-    socket.send_to_client(101)
+
+    cap = cv2.VideoCapture(0)
+    ret, frame = cap.read()
+    image = imutils.resize(frame, width=300)
+    print(image)
+    print("===========")
+
+    cap.release()
+    bmp_img = cv2.imencode(".bmp", image)
+    print(bmp_img)
+    b = bytearray(image)
+    #print(b)
+    print("===========")
+    result, data= np.array(bmp_img)
+    data = data.tobytes()
+    print(data)
+    print(len(data))
+
+    testsocket = SocketServer(ip=ip, port=port)
+
+
+    testsocket.host_socket()
+
+    testsocket.send_to_client(101)
+
+    testsocket.send_image(data)

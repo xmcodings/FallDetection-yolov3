@@ -105,8 +105,6 @@ class Controller:
         print(ardu)
         ardu_decode = ardu_decode.replace("\r","")
         ardu_decode = ardu_decode.replace("\n","")
-        ardu_decode1 = ardu_decode1.replace("\r", "")
-        ardu_decode1 = ardu_decode1.replace("\n", "")
 
         if ardu_decode =="101":
             # 센서가 작동해서 에어벡 터짐
