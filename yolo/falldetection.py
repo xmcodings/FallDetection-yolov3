@@ -4,7 +4,7 @@ def detectFall(classids, centercoords):
     # returns 0 if no detect, 1 if warn, and 2 if human
 
     red_detect_keywords = [0] # person,
-    orange_detect_keywords = [24, 25, 26, 32, 39, 41, 60, 67] #  sports ball, bottle, cup pottedplant,
+    orange_detect_keywords = [24, 25, 26, 32, 39, 41, 60, 67, 78, 79] #  sports ball, bottle, cup pottedplant, hairdryer, toothbrush
     ignore_keywords = [14] # bird
     QUEUESIZE = 4
     threshold = 1

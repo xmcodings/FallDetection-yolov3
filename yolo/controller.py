@@ -41,8 +41,6 @@ class Controller:
         self.lbl_detected_objs.pack(side="bottom", fill="both", expand="yes", padx=10, pady=10)
         self.btn_start.pack(side="bottom", fill="both", expand="yes", padx=10, pady=10)
 
-
-
         # start a thread that constantly pools the video sensor for
         # the most recently read frame
         self.stopEvent = threading.Event()
@@ -160,7 +158,8 @@ class Controller:
         #    print("[runtime error during frame fetch]")
         #    print(sys.exc_info()[0])
 
-    def send_msg(self):
+    def send_msg(self, header, center_coordinates, object_diff):
+
         self.s.write(b'1')
         self.s.write(b'/')
         print("detect human")

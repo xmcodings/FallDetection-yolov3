@@ -197,15 +197,18 @@ class YoloDetection:
         #print(self.idxs)
         #print(self.idxs.flatten())
         thresh_obj = []
+        coords_obj = []
         if len(self.idxs) > 0:
             for i in self.idxs.flatten():
                 thresh_obj.append(class_ids[i])
+                coords_obj.append(center_coord[i])
         #print(class_ids)
         #print(thresh_obj)
 
-        self.center_coord_q.append(center_coord)  # 전 4 frame으로부터 받은 object 정보 queue
+        self.center_coord_q.append(coords_obj)  # 전 4 frame으로부터 받은 object 정보 queue
         self.class_id_q.append(thresh_obj)  # 전 4 frame으로부터 받은 물체 id queue
 
+        #print(center_coord, "///", thresh_obj)
         # image manipulation
         if len(self.idxs) > 0:
             # loop over the indexes we are keeping
