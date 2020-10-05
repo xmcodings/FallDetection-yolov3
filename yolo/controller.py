@@ -71,20 +71,45 @@ class Controller:
 
     def start_monitor(self):
         #try:
-
         #while not self.stopEvent.is_set():
         ret, frame = self.cap.read()
         detect, object_diff, center_coordinates, image = self.yolodetect.start_detection(image=frame)
-        #print("detect : ", detect)
-        #print("object diff : ", object_diff)
-        #print("center coords : ", center_coordinates)
 
-        if detect == 2:
+        if detect == 2: # human detect
             self.s.write(b'1')
+            self.s.write(b'/')
             print("detect human")
             self.lbl_status_bar["text"] = "bad"
             self.lbl_status_bar.configure(background="red")
             self.lbl_detected_objs["text"] = "detected : " + object_diff
+            led_send = []
+            for i in center_coordinates:
+                if i["X"] < 240:
+                    print("hi1")
+                    led_send.append("1")
+                elif i["X"] < 480:
+                    print("hi2")
+                    led_send.append("2")
+                elif i["X"] < 720:
+                    print("hi3")
+                    led_send.append("3")
+                elif i["X"] < 960:
+                    print("hi4")
+                    led_send.append("4")
+                else:
+                    print("hi5")
+                    led_send.append("5")
+
+            led_set = set(led_send)
+            led = "".join(led_set)
+            ledbytes = str.encode(led)
+            lenn = len(led_set)
+            lenn = bytes(lenn)
+            self.s.write(lenn)
+            self.s.write(b'/')
+            self.s.write(data=ledbytes)
+            self.s.write(b'e')
+
         elif detect == 1:
             print("detect object")
             self.s.write(b'2')
@@ -102,7 +127,7 @@ class Controller:
         ardu_decode = ardu.decode("utf-8")
         ardu_decode1 = ardu.decode()
 
-        print(ardu)
+        print("arduino : ", ardu)
         ardu_decode = ardu_decode.replace("\r","")
         ardu_decode = ardu_decode.replace("\n","")
 
@@ -135,13 +160,48 @@ class Controller:
         #    print("[runtime error during frame fetch]")
         #    print(sys.exc_info()[0])
 
+    def send_msg(self):
+        self.s.write(b'1')
+        self.s.write(b'/')
+        print("detect human")
+        self.lbl_status_bar["text"] = "bad"
+        self.lbl_status_bar.configure(background="red")
+        self.lbl_detected_objs["text"] = "detected : " + object_diff
+        led_send = []
+        for i in center_coordinates:
+            if i["X"] < 240:
+                print("hi1")
+                led_send.append("1")
+            elif i["X"] < 480:
+                print("hi2")
+                led_send.append("2")
+            elif i["X"] < 720:
+                print("hi3")
+                led_send.append("3")
+            elif i["X"] < 960:
+                print("hi4")
+                led_send.append("4")
+            else:
+                print("hi5")
+                led_send.append("5")
+
+        led_set = set(led_send)
+        led = "".join(led_set)
+        ledbytes = str.encode(led)
+        lenn = len(led_set)
+        lenn = bytes(lenn)
+        self.s.write(lenn)
+        self.s.write(b'/')
+        self.s.write(data=ledbytes)
+        self.s.write(b'e')
 
 
 
 
 if __name__ == "__main__":
-    s = serial.Serial(port='/dev/tty.usbserial-1420', baudrate=9600, timeout=0)
-    ip = "192.168.0.4"
+    s = serial.Serial(port='/dev/tty.usbserial-1430', baudrate=115200, timeout=0)
+
+    ip = "192.168.43.170"
     port = 9999
     socket = socketServer.SocketServer(ip=ip, port=port)
     socket.host_socket()
