@@ -21,12 +21,12 @@ class Controller:
         self.yolodetect = yolocv.YoloDetection()
         self.toggle_monitor = False
         self.stopEvent = None
-        self.object_position = []
-        self.patience = 0
         self.window = tk.Tk()
         self.window.minsize(300, 100)
         self.frame = None
         self.panel = None
+        self.object_position = []
+        self.patience = 0
         self.cap = vs
         self.labels = open("data/coco.names").read().strip().split("\n")
         self.socket_server = socket
@@ -76,8 +76,8 @@ class Controller:
         detect, object_diff, center_coordinates, image = self.yolodetect.start_detection(image=frame)
 
         if detect == 2: # human detect
-            self.s.write(b'1')
-            self.s.write(b'/')
+            #self.s.write(b'1')
+            #self.s.write(b'/')
             print("detect human")
             self.lbl_status_bar["text"] = "bad"
             self.lbl_status_bar.configure(background="red")
@@ -105,26 +105,27 @@ class Controller:
             ledbytes = str.encode(led)
             lenn = len(led_set)
             lenn = bytes(lenn)
-            self.s.write(lenn)
-            self.s.write(b'/')
-            self.s.write(data=ledbytes)
-            self.s.write(b'e')
+            #self.s.write(lenn)
+            #self.s.write(b'/')
+            #self.s.write(data=ledbytes)
+            #self.s.write(b'e')
+            print(lenn)
             self.patience = 0
-
         elif detect == 1:
             print("detect object")
-            self.s.write(b'2')
+            #self.s.write(b'2')
             self.lbl_status_bar["text"] = "warning"
             self.lbl_status_bar.configure(background="orange")
             self.lbl_detected_objs["text"] = "detected : " + object_diff
             self.object_position.append(center_coordinates)
             self.patience = 0
 
+
         else: # detect = 0
             self.lbl_status_bar["text"] = "good"
             self.lbl_status_bar.configure(background="green")
             self.lbl_detected_objs["text"] = "detected : nothing"
-            self.s.write(b'0')
+            #self.s.write(b'0')
             if len(self.object_position) > 20:
                 self.patience += 1
                 if self.patience > 3:
@@ -132,18 +133,20 @@ class Controller:
                     self.object_position.clear()
                     self.patience = 0
 
-        ardu = self.s.readline()
-        ardu_decode = ardu.decode("utf-8")
-        ardu_decode1 = ardu.decode()
 
-        print("arduino : ", ardu)
-        ardu_decode = ardu_decode.replace("\r","")
-        ardu_decode = ardu_decode.replace("\n","")
 
-        if ardu_decode =="101":
+        #ardu = self.s.readline()
+        #ardu_decode = ardu.decode("utf-8")
+        #ardu_decode1 = ardu.decode()
+
+        #print("arduino : ", ardu)
+        #ardu_decode = ardu_decode.replace("\r","")
+        #ardu_decode = ardu_decode.replace("\n","")
+
+        #if ardu_decode =="101":
             # 센서가 작동해서 에어벡 터짐
-            print("send to client!!")
-            socket.send_to_client(101)
+        #    print("send to client!!")
+        #    socket.send_to_client(101)
 
         #print(self.toggle_monitor)
         if self.panel is None:
@@ -209,13 +212,14 @@ class Controller:
 
 
 if __name__ == "__main__":
-    s = serial.Serial(port='/dev/tty.usbserial-1430', baudrate=115200, timeout=0)
-
+    #s = serial.Serial(port='/dev/tty.usbserial-1430', baudrate=115200, timeout=0)
+    s = 0
     ip = "192.168.43.170"
     port = 9999
-    socket = socketServer.SocketServer(ip=ip, port=port)
-    socket.host_socket()
-    a = s.readline()
+    #socket = socketServer.SocketServer(ip=ip, port=port)
+    #socket.host_socket()
+    #a = s.readline()
+    socket = 0
     #cont = Controller(s)
     cap = cv2.VideoCapture(0)
     cont = Controller(vs=cap, serial=s, socket=socket)
