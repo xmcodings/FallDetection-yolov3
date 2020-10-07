@@ -25,6 +25,7 @@ class Controller:
         self.window.minsize(300, 100)
         self.frame = None
         self.panel = None
+        self.ignite = False # 물체 떨어지는거 판단
         self.object_position = []
         self.patience = 0
         self.cap = vs
@@ -132,11 +133,12 @@ class Controller:
                     print("OBJECT FALL")
                     self.object_position.clear()
                     self.patience = 0
+                    self.ignite = True
 
 
 
         #ardu = self.s.readline()
-        #ardu_decode = ardu.decode("utf-8")
+        #ardu_decode = ardu.decode("utf-8")x
         #ardu_decode1 = ardu.decode()
 
         #print("arduino : ", ardu)
@@ -147,6 +149,12 @@ class Controller:
             # 센서가 작동해서 에어벡 터짐
         #    print("send to client!!")
         #    socket.send_to_client(101)
+
+        if self.ignite:
+            # fall detected
+                print("send to client!!")
+                socket.send_to_client(101)
+
 
         #print(self.toggle_monitor)
         if self.panel is None:

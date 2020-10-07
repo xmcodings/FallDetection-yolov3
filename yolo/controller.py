@@ -27,6 +27,7 @@ class Controller:
         self.window.minsize(300, 100)
         self.frame = None
         self.panel = None
+        self.ignite = False
         self.cap = vs
         self.labels = open("data/coco.names").read().strip().split("\n")
         self.socket_server = socket
@@ -74,63 +75,113 @@ class Controller:
         #while not self.stopEvent.is_set():
         ret, frame = self.cap.read()
         detect, object_diff, center_coordinates, image = self.yolodetect.start_detection(image=frame)
-
+        bytee = ""
         if detect == 2: # human detect
-            self.s.write(b'1')
-            self.s.write(b'/')
+            #self.s.write(b'1')
+            #self.s.write(b'/')
             print("detect human")
+            frame_width = int(self.cap.get(3))
+            frame_height = int(self.cap.get(4))
+            print(frame_width , frame_height)
             self.lbl_status_bar["text"] = "bad"
             self.lbl_status_bar.configure(background="red")
             self.lbl_detected_objs["text"] = "detected : " + object_diff
             led_send = []
             for i in center_coordinates:
-                if i["X"] < 240:
+                if i["X"] < 384:
                     print("hi1")
-                    led_send.append("1")
-                elif i["X"] < 480:
+                    led_send.append("5")
+                elif i["X"] < 768:
                     print("hi2")
-                    led_send.append("2")
-                elif i["X"] < 720:
+                    led_send.append("4")
+                elif i["X"] < 1152:
                     print("hi3")
                     led_send.append("3")
-                elif i["X"] < 960:
+                elif i["X"] < 1536:
                     print("hi4")
-                    led_send.append("4")
+                    led_send.append("2")
                 else:
                     print("hi5")
-                    led_send.append("5")
+                    led_send.append("1")
 
             led_set = set(led_send)
             led = "".join(led_set)
             ledbytes = str.encode(led)
             lenn = len(led_set)
-            lenn = bytes(lenn)
-            self.s.write(lenn)
-            self.s.write(b'/')
-            self.s.write(data=ledbytes)
-            self.s.write(b'e')
+
+            #lenn = bytes(lenn)
+            bytee = "1/" + str(lenn) + "/" + led + "e"
+            print(bytee)
+            x = bytes(bytee, 'utf8')
+            print(x)
+            self.s.write(x)
+            #self.s.write(lenn)
+            #self.s.write(b'/')
+            #self.s.write(data=ledbytes)
+            #self.s.write(b'e')
             self.patience = 0
 
         elif detect == 1:
             print("detect object")
-            self.s.write(b'2')
+            #self.s.write(b'2')
             self.lbl_status_bar["text"] = "warning"
             self.lbl_status_bar.configure(background="orange")
             self.lbl_detected_objs["text"] = "detected : " + object_diff
             self.object_position.append(center_coordinates)
+            led_send = []
+            for i in center_coordinates:
+                if i["X"] < 384:
+                    print("hi1")
+                    led_send.append("5")
+                elif i["X"] < 768:
+                    print("hi2")
+                    led_send.append("4")
+                elif i["X"] < 1152:
+                    print("hi3")
+                    led_send.append("3")
+                elif i["X"] < 1536:
+                    print("hi4")
+                    led_send.append("2")
+                else:
+                    print("hi5")
+                    led_send.append("1")
+
+            led_set = set(led_send)
+            led = "".join(led_set)
+            ledbytes = str.encode(led)
+            lenn = len(led_set)
+
+            # lenn = bytes(lenn)
+            bytee = "2/" + str(lenn) + "/" + led + "e"
+            print(bytee)
+            x = bytes(bytee, 'utf8')
+            print(x)
+            self.s.write(x)
+
             self.patience = 0
 
-        else: # detect = 0
+        else: # detect = 0 detect nothing!
             self.lbl_status_bar["text"] = "good"
             self.lbl_status_bar.configure(background="green")
             self.lbl_detected_objs["text"] = "detected : nothing"
-            self.s.write(b'0')
+            #self.s.write(b'0')
+            byteee = "0/" + "2" + "/" + "00" + "e"
+            x = bytes(byteee, 'utf8')
+            print(x)
+            self.s.write(x)
             if len(self.object_position) > 20:
                 self.patience += 1
                 if self.patience > 3:
                     print("OBJECT FALL")
+                    byteee = "3/" + "2" + "/" + "00" + "e"
+                    x = bytes(byteee, 'utf8')
+                    print(x)
+                    self.s.write(x)
                     self.object_position.clear()
                     self.patience = 0
+                    self.ignite = True
+
+
 
         ardu = self.s.readline()
         ardu_decode = ardu.decode("utf-8")
@@ -140,10 +191,17 @@ class Controller:
         ardu_decode = ardu_decode.replace("\r","")
         ardu_decode = ardu_decode.replace("\n","")
 
-        if ardu_decode =="101":
-            # 센서가 작동해서 에어벡 터짐
+        #if ardu_decode =="101":
+        #    # 센서가 작동해서 에어벡 터짐
+        #    print("send to client!!")
+        #    socket.send_to_client(101)
+
+        if self.ignite:
+            # fall detected
             print("send to client!!")
             socket.send_to_client(101)
+            self.ignite = False
+
 
         #print(self.toggle_monitor)
         if self.panel is None:
@@ -209,7 +267,7 @@ class Controller:
 
 
 if __name__ == "__main__":
-    s = serial.Serial(port='/dev/tty.usbserial-1430', baudrate=115200, timeout=0)
+    s = serial.Serial(port='/dev/tty.usbserial-1410', baudrate=115200, timeout=0)
 
     ip = "192.168.43.170"
     port = 9999
@@ -217,7 +275,7 @@ if __name__ == "__main__":
     socket.host_socket()
     a = s.readline()
     #cont = Controller(s)
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     cont = Controller(vs=cap, serial=s, socket=socket)
     #cont.start_monitor()
     cont.window.mainloop()
