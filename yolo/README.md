@@ -11,6 +11,6 @@ To run this:
 
 run controller for full option(webcam, arduino, android)
 
-run controller_wo_arduand for only webcam and monitering
+run controller_wo_arduand for only webcam and monitoring
 
 run video_tester to input videos
